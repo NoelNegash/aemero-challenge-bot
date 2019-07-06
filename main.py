@@ -252,7 +252,7 @@ def message_handler(bot, update):
 
 
     p = getPlayer("@"+update.message.chat['username'])
-    if not p and not "@"+update.message.chat['username'] in FACILITATORS+['@the_animaniac']:
+    if not p:
         update.message.reply_text("/start the bot first.")
         return
     
