@@ -18,20 +18,34 @@ logger = logging.getLogger()
 # Getting mode, so we could define run function for local and Heroku setup
 mode = "dev"#os.getenv("MODE")
 TOKEN = '836835953:AAHLVOiFuu32V5tbuBbcuk2JfpOlyNEaF6c'
-FACILITATORS = ['@Fellasfaw']
+FACILITATORS = ['@Fellasfaw',
+                '@TMRBZ',
+                '@Madmicetro',
+                '@minyelshowa',
+                '@J0KE4',
+                '@Arisendfight',
+                '@Go_tosleep',
+                '@shmateo',
+                '@Rediham',
+                '@Dangerzoon',
+                '@Shan3224',
+                '@the_animaniac'
+                ]
+
+FINALIST_NUM = 8
 
 CHALLENGES = [
     ['Minefield', 'Careful where you step. Lead your blind partner through a maze of booby traps.', 'The Room Next To 7D'],
     ['Charades','You\'ll get a word and have to act it out to pass.', 'The Ping Pong Tables'],
     ['Balloon Toss', 'Hydrogen is the lightest gas, so it\'s gonna be okay.','The Basement Across The Basketball Court'],
     ['Password', 'Find the letters, find the prize.', 'Everywhere'],
-    ['Tangled', 'You want to do some stretching before this one, Rapunzel.', 'The Social Science Lab'],
-    ['Shape Formation','Teamwork and geometry, simple enough.','The Social Science Lab']
+    ['Tangled', 'You want to do some stretching before this one, Rapunzel.', 'The Aemero Club Room'],
+    ['Shape Formation','Teamwork and geometry, simple enough.','The Aemero Club Room']
 ]
 ROUND2_CHALLENGES = [
-    ['Lip Sync Battle', 'Pick a song and make it yours. Fake it \'til you make it.'],
+    ['Lip-Sync-Battle', 'Pick a song and make it yours. Fake it \'til you make it.'],
     ['Dodgeball', 'Dodging balls. Something you\'re probably good at.'],
-    ['Dance Battle', 'You will have to bust some moves to pass this challenge. Only the best can win!',]
+    ['Dance-Battle', 'You will have to bust some moves to pass this challenge. Only the best can win!',]
 ]
 DESCRIPTION = [
     "black",
@@ -56,12 +70,12 @@ DESCRIPTION = [
 ]
 
 PASSWORD = [
-    ['m','green'],
-    ['e','black'],
-    ['r','red'],
-    ['o','orange'],
-    ['e','purple'],
-    ['a','blue']
+    ['m','pink'],
+    ['e','blue'],
+    ['r','green'],
+    ['o','black'],
+    ['a','red'],
+    ['e','orange']
 ]
 
 CHARADES = {
@@ -148,6 +162,9 @@ def player_pass(bot,p,c):
     
     print(p,c)
 
+    if game_data['state'] != 'first_round':
+        return
+
     if list(set(p['challenges'])) == [1]:
         if p['lm'] == 'second_round':
             return
@@ -160,20 +177,23 @@ def player_pass(bot,p,c):
 
         for i in players:
             bot.sendMessage(i['chat_id'],"Attention!!! {} and {} have completed all the challenges of the first round.".format(p['username'],p['partner']))
-            if len(game_data['finalists']) != 8:
-                bot.sendMessage(i['chat_id'],"They are pair No. {}\nOnly {} to go.".format(len(game_data['finalists']),8-len(game_data['finalists'])))
+            if len(game_data['finalists']) != FINALIST_NUM:
+                bot.sendMessage(i['chat_id'],"They are pair No. {}\nOnly {} to go.".format(len(game_data['finalists']),FINALIST_NUM-len(game_data['finalists'])))
             else:
                 bot.sendMessage(i['chat_id'],"They are the final pair!!! The first round is over!!!")
 
                 p['lm']='second_round'
 
-        if len(game_data['finalists']) == 8:
+        if len(game_data['finalists']) == FINALIST_NUM:
             game_data['state']='second_round'
 
     else:
         p['lm']='first_round'
 
 def player_fail(bot,p,c):
+    if game_data['state'] != 'first_round':
+        return
+
     p['challenges'][c] = -1
     p['lm']='first_round'
     bot.sendMessage(p['chat_id'], "You have failed the challenge '{}'.  If you want to try again, you need to pay 5 Birr and revive.".format(CHALLENGES[c][0]))
@@ -189,11 +209,17 @@ def start_handler(bot, update):
         "misc":{}
     }
 
+    if game_data['game_over']:
+        update.message.reply_text("The game is over.")
+        return
+
     if p['username'] in FACILITATORS: 
+        update.message.reply_text("Welcome, facilitator.")
         return
 
     if game_data['paired_up']:
         update.message.reply_text("The game has already started.")
+        return
 
     if (getPlayer(p['username'])):
         update.message.reply_text('You have already started this bot.')
@@ -238,8 +264,12 @@ def message_handler(bot, update):
 
     txt = update.message.text
 
+    if game_data['state'] == 'game_over':
+        update.message.reply_text("The game is over. The winners of the prize money are {} and {}.".format(game_data['finalists'][0][0],game_data['finalists'][0][1]))
+        return
+
     # Facilitator messages
-    if "@"+update.message.chat['username'] in FACILITATORS+['@the_animaniac']:
+    if "@"+update.message.chat['username'] in FACILITATORS:
 
         if game_data.get('state','') == 'first_round':
             p = getPlayer(txt)
@@ -255,7 +285,7 @@ def message_handler(bot, update):
     if not p:
         update.message.reply_text("/start the bot first.")
         return
-    
+
     if p['lm'] == 'gender':
         if txt.lower() in ['male','female']: 
             p['gender'] = txt.lower()
@@ -275,7 +305,7 @@ def message_handler(bot, update):
         #update.message.reply_text("Use the menu.")
         if len(txt) < 10:
             update.message.reply_text('Too short.')
-        elif len(txt) > 40:
+        elif len(txt) > 80:
             update.message.reply_text('Too long.')
         else:
             p['lm'] = 'nickname'
@@ -289,7 +319,7 @@ def message_handler(bot, update):
         else:
             p['nickname'] = txt
             p['lm'] = 'personality'
-            update.message.reply_text('5) Are you an introvert or extrovert?')
+            update.message.reply_text('5) Are you an introvert (uncomfortable around people) or extrovert (comfortable around people)?')
 
     elif p['lm'] == 'personality':
         if not txt.lower() in ['introvert','extrovert']:
@@ -349,7 +379,9 @@ def message_handler(bot, update):
     elif p['lm']=='second_round':
 
         if len([1 for x in game_data['finalists'] if p['username'] in x]):
-            pass
+            update.message.reply_text("This is the second and final round. You don't need me anymore. Just do what the facilitators tell you.")
+        else:
+            update.message.reply_text("You are not a finalist. All you can do now is watch the last 8 fight until one is left.")
 
 
 def callback_handler(bot, update):
@@ -361,7 +393,7 @@ def callback_handler(bot, update):
     
     p = getPlayer("@"+query.message.chat['username'])
     
-    if not p and not "@"+query.message.chat['username'] in FACILITATORS+['@the_animaniac']:
+    if not p and not "@"+query.message.chat['username'] in FACILITATORS:
         query.message.reply_text("/start the bot first.")
         return
 
@@ -388,7 +420,8 @@ def callback_handler(bot, update):
 
             p['lm'] = 'appearance'
             #query.message.reply_text('3) Use the buttons below to write a 7 word description of your appearance.\n    =>',reply_markup=appearanceMenu())
-            query.message.reply_text('3) Describe what you are wearing right now in 40 letters or less.')
+            query.message.reply_text('3) Describe what you are wearing right now in 80 characters or less.')
+            query.answer()
         else:
             query.answer('You have already filled it in.')
 
@@ -467,7 +500,6 @@ def callback_handler(bot, update):
                 ]
                 a[{'male':0,'female':1}[i['gender']]].append(i)
 
-            print(clone)
 
             for age in clone:
                 males = age[0]
@@ -497,7 +529,7 @@ def callback_handler(bot, update):
 
             for i in players:
                 if not i.get('partner',None): 
-                    bot.sendMessage(i['chat_id'], "Sadly, we couldn't find a partner for you. It seems you are out of the game.")
+                    bot.sendMessage(i['chat_id'], "Sadly, we couldn't find a partner for you. It seems you are out of the game. You can go back to the booth to get a refund.")
 
             game_data['players'] = players = [i for i in players if i.get('partner',False)]
 
@@ -543,6 +575,47 @@ def callback_handler(bot, update):
 
                 [bot.sendMessage(i['chat_id'],m) for m in messages] 
                 i['lm'] = c[0].lower().replace(" ", "_")
+    elif query.data.startswith('elimination_'):
+
+        data = query.data.split("_")
+        if len(data)==2:
+            query.edit_message_text(text="Which team won?", 
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("{} and {}".format(game_data['finalists'][i][0],game_data['finalists'][i][1]),callback_data=query.data+"_"+str(i))] for i in range(len(game_data['finalists']))
+                ])
+            )
+        elif len(data)==3:
+            query.edit_message_text(text="Which team lost?", 
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("{} and {}".format(game_data['finalists'][i][0],game_data['finalists'][i][1]),callback_data=query.data+"_"+str(i))] for i in range(len(game_data['finalists']))
+                ])
+            )
+        elif len(data)==4:
+            winners = game_data['finalists'][int(data[2])]
+            losers = game_data['finalists'][int(data[3])]
+
+            if winners == losers:
+                query.answer("Invalid!")
+                return
+            
+            game_data['finalists'].remove(losers)
+            if len(game_data['finalists'])==1:
+                game_data['state'] = 'game_over'
+                game_data['game_over'] = True
+
+            for p in players:
+                bot.sendMessage(p['chat_id'], random.choice(["Amazing","Wonderful","Impressive","Awesome","Magnificent"])+
+                        "!!! {} and {} defeated {} and {} in a game of \"{}\", eliminating them.".format(
+                        winners[0],winners[1],losers[0],losers[1],data[1].title().replace("-"," ")
+                    ))
+                if game_data['state']=='game_over':
+                    bot.sendMessage(p['chat_id'],"They are the last remaining couple, so they win the cash prize!!!!!")
+                    bot.sendMessage(p['chat_id'],"The game is now officially over.")
+                else:
+                    bot.sendMessage(p['chat_id'],"There are only {} other couples left, and {} of them will share the same fate!!!\nDon't miss this Battle Royale!!!".format(
+                            len(game_data['finalists']),len(game_data['finalists'])-1
+                        ))
+
 
     else:
         query.answer()
@@ -550,7 +623,7 @@ def callback_handler(bot, update):
 
 def approve_handler(bot, update):    
     p = "@"+update.message.chat['username']
-    if not p in FACILITATORS+['@the_animaniac']:
+    if not p in FACILITATORS:
         return
 
     for i in [update.message.text[i.offset:i.offset+i.length] for i in update.message.entities if i.type == "mention"]:
@@ -568,7 +641,7 @@ def approve_handler(bot, update):
 
 def charades_handler(bot, update):    
     p = "@"+update.message.chat['username']
-    if not p in FACILITATORS+['@the_animaniac']:
+    if not p in FACILITATORS:
         return
 
     try :
@@ -594,7 +667,7 @@ def charades_handler(bot, update):
 
 def stats_handler(bot, update):    
     p = "@"+update.message.chat['username']
-    if not p in FACILITATORS+['@the_animaniac']:
+    if not p in FACILITATORS:
         return
     update.message.reply_text("Total: {}\nApproved: {}\nMales: {}\nFemales: {}\nIntroverts: {}\nExtroverts: {}".format(
         len(players), 
@@ -608,7 +681,7 @@ def stats_handler(bot, update):
 
 def game_begin_handler(bot, update):    
     p = "@"+update.message.chat['username']
-    if not p in FACILITATORS+['@the_animaniac']:
+    if not p in FACILITATORS:
         return
 
     update.message.reply_text("Are you sure about starting the game?", 
@@ -619,6 +692,16 @@ def game_begin_handler(bot, update):
         )
     )
 
+def elimination_handler(bot,update):
+    p = "@"+update.message.chat['username']
+    if not p in FACILITATORS:
+        return
+
+    update.message.reply_text("Which game was it?", 
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(c[0],callback_data="elimination_"+c[0].lower())] for c in ROUND2_CHALLENGES
+        ])
+    )
 
 if __name__ == '__main__':
     logger.info("Starting bot")
@@ -627,6 +710,7 @@ if __name__ == '__main__':
     updater.dispatcher.add_handler(CommandHandler("start", start_handler))
     updater.dispatcher.add_handler(CommandHandler("challenges", challenges_handler))
     updater.dispatcher.add_handler(CommandHandler("charades", charades_handler))
+    updater.dispatcher.add_handler(CommandHandler("elimination", elimination_handler))
 
 
     updater.dispatcher.add_handler(CommandHandler("stats", stats_handler))
