@@ -268,11 +268,19 @@ def message_handler(bot, update):
                 ]]))
             p['lm'] = 'age'
         else: 
-            update.message.reply_text("This is Ethiopia. We don't do that LGBTQB+ shit.")
+            update.message.reply_text("This is Ethiopia. We don't do that LGBTQB+ stuff. Male or Female.")
     elif p['lm'] == 'age':
         update.message.reply_text("Use the menu.")
     elif p['lm'] == 'appearance':
-        update.message.reply_text("Use the menu.")
+        #update.message.reply_text("Use the menu.")
+        if len(txt) < 10:
+            update.message.reply_text('Too short.')
+        elif len(txt) > 40:
+            update.message.reply_text('Too long.')
+        else:
+            p['lm'] = 'nickname'
+            p['appearance'] = txt
+            update.message.reply_text("4) Choose a nickname for yourself so your partner can find you.")
     elif p['lm'] == 'nickname':
         if len(txt) < 5:
             update.message.reply_text('Too short.')
@@ -285,12 +293,12 @@ def message_handler(bot, update):
 
     elif p['lm'] == 'personality':
         if not txt.lower() in ['introvert','extrovert']:
-            update.message.reply_text('I don\'t know what that is.')
+            update.message.reply_text('I don\'t know what that is. Choose introvert or extrovert.')
         else:
             p['personality'] = txt.lower()
 
             p['lm'] = 'approve'
-            update.message.reply_text('Great. Now go the ticket booth so that we can approve your account.')
+            update.message.reply_text('Great. Now go to the ticket booth so that we can approve your account.')
     elif p['lm'] == 'approve':
         update.message.reply_text('You can\'t do anything until your account gets approved.')
     elif p['lm'] == 'wait':
@@ -379,7 +387,8 @@ def callback_handler(bot, update):
             p['age'] = int(query.data.split("_")[1])
 
             p['lm'] = 'appearance'
-            query.message.reply_text('3) Use the buttons below to write a 7 word description of your appearance.\n    =>',reply_markup=appearanceMenu())
+            #query.message.reply_text('3) Use the buttons below to write a 7 word description of your appearance.\n    =>',reply_markup=appearanceMenu())
+            query.message.reply_text('3) Describe what you are wearing right now in 40 letters or less.')
         else:
             query.answer('You have already filled it in.')
 
@@ -543,7 +552,8 @@ def approve_handler(bot, update):
 
     for i in [update.message.text[i.offset:i.offset+i.length] for i in update.message.entities if i.type == "mention"]:
         if getPlayer(i):
-            update.message.reply_text("Are you sure about approving {}?".format(i), 
+            x = getPlayer(i)
+            update.message.reply_text("Are you sure about approving {}?\n\nSex: {}\nAge: {}\nAppearance: {}".format(i,x['gender'],x['age'],x['appearance']), 
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Yes",callback_data="approve_"+i),
                      InlineKeyboardButton("No",callback_data="deny_"+i)]
