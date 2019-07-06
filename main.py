@@ -393,14 +393,17 @@ def callback_handler(bot, update):
             query.answer('You have already filled it in.')
 
     elif query.data.startswith("approve_"):
+
         p = getPlayer(query.data.split('_',1)[1])
 
-        query.answer("Approved!")
-        query.edit_message_text(text=p['username']+"'s account has been approved.")
+        if p['lm'] == 'approve':
+            query.answer("Approved!")
+            query.edit_message_text(text=p['username']+"'s account has been approved.")
 
-        p['lm'] = 'wait'
-        bot.sendMessage(p['chat_id'], 'Your account has been approved. I will contact you again when the game is about to start.')
-
+            p['lm'] = 'wait'
+            bot.sendMessage(p['chat_id'], 'Your account has been approved. I will contact you again when the game is about to start.')
+        else:
+            query.answer('Invalid!!')
     elif query.data.startswith('deny_'):
         p = getPlayer(query.data.split('_',1)[1])
 
@@ -551,7 +554,7 @@ def approve_handler(bot, update):
         return
 
     for i in [update.message.text[i.offset:i.offset+i.length] for i in update.message.entities if i.type == "mention"]:
-        if getPlayer(i):
+        if getPlayer(i) and getPlayer(i)['lm'] == "approve":
             x = getPlayer(i)
             update.message.reply_text("Are you sure about approving {}?\n\nSex: {}\nAge: {}\nAppearance: {}".format(i,x['gender'],x['age'],x['appearance']), 
                 reply_markup=InlineKeyboardMarkup([
